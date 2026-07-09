@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS AI - Security Gateway</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🛡️ AEGIS AI Gateway</div>
+        <div class="nav-links">
+            <button onclick="switchView('chat')" id="btn-chat" class="active-nav">User Chat</button>
+            <button onclick="switchView('admin')" id="btn-admin">Security Dashboard</button>
+        </div>
+    </nav>
+
+    <main id="chat-view" class="view-container">
+        <div class="chat-box" id="chat-history">
+            <div class="message system">System: AEGIS Security Proxy Active. Monitoring all string tokens...</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Type a prompt for the corporate model (Try typing 'hack' or 'ignore')...">
+            <button onclick="sendPrompt()">Send Payload</button>
+        </div>
+    </main>
+
+    <main id="admin-view" class="view-container hidden">
+        <div class="metrics-grid">
+            <div class="card">
+                <h3>Total Intercepted Queries</h3>
+                <p id="stat-total">0</p>
+            </div>
+            <div class="card blocked-card">
+                <h3>Threats Neutralized</h3>
+                <p id="stat-blocked">0</p>
+            </div>
+        </div>
+        <div class="chart-wrapper">
+            <canvas id="threatChart"></canvas>
+        </div>
+        <div class="logs-container">
+            <h3>Real-Time Attack Audit Log (OWASP LLM01)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User Identity</th>
+                        <th>Payload Context</th>
+                        <th>Risk Metric</th>
+                    </tr>
+                </thead>
+                <tbody id="log-table-body">
+                    </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
