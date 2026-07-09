@@ -1,0 +1,11 @@
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment Variables (Protects your Gemini Key!)
+.env
+
+# Database (Prevents you and Manoj from overwriting each other's data)
+aegis.db
+*.sqlite3
