@@ -1,0 +1,169 @@
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Navigation Layout */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #1e293b;
+    border-bottom: 1px solid #334155;
+}
+
+.logo {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.nav-links button {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #cbd5e1;
+    padding: 0.5rem 1rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+}
+
+.nav-links button.active-nav, .nav-links button:hover {
+    background-color: #334155;
+    border-color: #38bdf8;
+    color: white;
+}
+
+/* Container Engine */
+.view-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Chat Layout Mechanics */
+.chat-box {
+    height: 55vh;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.message {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    max-width: 80%;
+    line-height: 1.5;
+}
+
+.message.user {
+    background-color: #2563eb;
+    margin-left: auto;
+}
+
+.message.ai {
+    background-color: #334155;
+    border-left: 4px solid #10b981;
+}
+
+.message.system {
+    background-color: #0f172a;
+    color: #94a3b8;
+    text-align: center;
+    max-width: 100%;
+    font-size: 0.875rem;
+}
+
+.message.security-alert {
+    background-color: #7f1d1d;
+    border: 1px solid #ef4444;
+    color: #fee2e2;
+    max-width: 100%;
+}
+
+.input-area {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    border: 1px solid #334155;
+    background-color: #1e293b;
+    color: white;
+    font-size: 1rem;
+}
+
+.input-area button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Dashboard Analytics Layout */
+.metrics-grid {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.card {
+    flex: 1;
+    background-color: #1e293b;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #334155;
+    text-align: center;
+}
+
+.card h3 { margin: 0 0 0.5rem 0; color: #94a3b8; font-size: 1rem; }
+.card p { margin: 0; font-size: 2.5rem; font-weight: bold; }
+
+.blocked-card { border-color: #ef4444; }
+.blocked-card p { color: #f87171; }
+
+.chart-wrapper {
+    background-color: #1e293b;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #334155;
+    margin-bottom: 2rem;
+    max-height: 300px;
+    display: flex;
+    justify-content: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1e293b;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+}
+
+th { background-color: #0f172a; color: #94a3b8; }
+code { background-color: #0f172a; padding: 0.2rem 0.4rem; border-radius: 0.25rem; color: #f43f5e; }
+.badge-high { background-color: #991b1b; padding: 0.25rem 0.5rem; border-radius: 0.25rem; color: #f87171; font-size: 0.875rem; font-weight: bold;}
