@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text
 from datetime import datetime
 
-from database import Base
+from database.database import Base
 
 
 class PromptLog(Base):
