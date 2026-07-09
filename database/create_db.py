@@ -1,5 +1,5 @@
 from database import create_database
 
-create_database()
-
-print("Database and tables created successfully!")
+if __name__ == "__main__":
+    create_database()
+    print("Database created successfully!")
