@@ -3,7 +3,7 @@
    Connected to FastAPI backend.
    ========================================================================= */
 
-const BACKEND_URL = 'http://127.0.0.1:8000';
+const BACKEND_URL = 'https://aegis-ai-o1un.onrender.com';
 const SESSION_USER_ID = `USR-${Math.floor(1000 + Math.random() * 9000)}`;
 
 // ---------- State ----------
