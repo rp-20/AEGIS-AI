@@ -93,8 +93,8 @@ async function sendPrompt() {
         appendMessage('security-warning',
             `<span class="msg-badge warn">WARNING · ${result.finalScore}</span><br>${escapeHTML(result.category)} — forwarded to the model with a flag.`, true);
     } else {
-        appendMessage('ai', `[Model response] Request cleared the gateway (risk ${result.finalScore}) and was forwarded safely.`);
-    }
+    appendMessage('ai', `(Risk Score: ${result.finalScore})<br><br>${result.aiResponse}`, true);
+}
 }
 
 function appendMessage(sender, text, isHTML) {
