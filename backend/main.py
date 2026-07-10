@@ -44,7 +44,7 @@ from google.genai import types
 # --------------------------------------------------------------------------
 
 DB_PATH = "aegis.db"
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-1.5-flash"
 
 # Set your key as an environment variable before starting the server:
 #   export GEMINI_API_KEY="your-key-here"          (macOS/Linux)
