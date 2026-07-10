@@ -337,7 +337,7 @@ def analyze_endpoint(req: PromptRequest):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             timestamp, req.user_id, result["prompt"], result["ruleScore"], result["patternScore"],
-            result["aiScore"], result["finalScore"], result["decision"], result["category"],
+            ai_score = result.get("aiScore", 0), result["finalScore"], result["decision"], result["category"],
             result["confidence"], json.dumps(result["matchedKeywords"]),
             json.dumps(result["matchedPatterns"]), result["reasoning"], result["rewrite"],
         ))
