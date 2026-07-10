@@ -342,7 +342,41 @@ def analyze_endpoint(req: PromptRequest):
             json.dumps(result["matchedPatterns"]), result["reasoning"], result["rewrite"],
         ))
 
-    return {**result, "timestamp": timestamp, "user_id": req.user_id}
+    # 3. CRASH-PROOF KEY RETRIEVAL
+    decision = result.get("decision", "ALLOW")
+    reasoning = result.get("reasoning", "Prompt cleared security thresholds.")
+    final_score = result.get("finalScore", 0)
+    ai_score = result.get("aiScore", 0) 
+
+    # 4. IF SECURITY BLOCKS THE PROMPT
+    if decision == "BLOCK":
+        return {
+            "decision": "BLOCK",
+            "reasoning": reasoning,
+            "finalScore": final_score,
+            "aiScore": ai_score,
+            "aiResponse": "🛡️ AEGIS Security Block: Request halted by gateway.",
+            "timestamp": timestamp,
+            "user_id": req.user_id
+        }
+        
+    # 5. IF SECURITY ALLOWS THE PROMPT: Fetch real AI response
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(req.prompt)
+        real_ai_answer = response.text
+    except Exception as e:
+        real_ai_answer = f"Prompt allowed, but live generation failed: {str(e)}"
+
+    return {
+        "decision": "ALLOW",
+        "reasoning": reasoning,
+        "finalScore": final_score,
+        "aiScore": ai_score,
+        "aiResponse": real_ai_answer,
+        "timestamp": timestamp,
+        "user_id": req.user_id
+    }
 
 
 @app.get("/api/logs")
