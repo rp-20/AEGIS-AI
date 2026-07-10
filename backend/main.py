@@ -10,18 +10,7 @@ zero changes to the UI:
     Layer 3  AI Classifier     (Gemini — returns a 0-100 score, not a binary verdict)
 
     finalScore = ruleScore*0.35 + patternScore*0.25 + aiScore*0.40
-    decision   = ALLOW (0-30) / WARNING (31-60) / BLOCK (61-100)
-
-This fixes the three problems in the original draft:
-  1. The blocklist short-circuited everything else ("hack", "password", etc.
-     instantly returned BLOCK/100 with no scoring) — now it's just one input
-     to the weighted score, like the other two layers.
-  2. The AI layer returned only a category string, so nothing tied it to a
-     numeric score — now Gemini is asked for a numeric risk_score, confidence,
-     reasoning, and a safe rewrite, all in one structured JSON call.
-  3. There was no fallback — if the Gemini call fails (quota/network), the
-     system now degrades gracefully to rule+pattern-only scoring instead of
-     crashing or silently mislabeling everything BENIGN.
+    decision   = ALLOW (0-30) / WARNING (31-50) / BLOCK (51-100)
 """
 
 import json
@@ -45,15 +34,6 @@ from google.genai import types
 
 DB_PATH = "aegis.db"
 GEMINI_MODEL = "gemini-1.5-flash"
-
-# Set your key as an environment variable before starting the server:
-#   export GEMINI_API_KEY="your-key-here"          (macOS/Linux)
-#   setx GEMINI_API_KEY "your-key-here"             (Windows)
-# Or create a .env file with GEMINI_API_KEY=... and `pip install python-dotenv`,
-# then uncomment the two lines below.
-#
-# from dotenv import load_dotenv
-# load_dotenv()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client: Optional[genai.Client] = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
@@ -81,7 +61,6 @@ def get_db():
     finally:
         conn.close()
 
-
 def init_db():
     with get_db() as conn:
         conn.execute("""
@@ -107,9 +86,7 @@ def init_db():
 init_db()
 
 # --------------------------------------------------------------------------
-# Layer 1 — Rule Engine (keyword categories, weighted)
-# Identical categories/weights to the frontend mock so scoring behaviour
-# doesn't visibly shift the moment the backend goes live.
+# Layer 1 — Rule Engine
 # --------------------------------------------------------------------------
 
 RULE_CATEGORIES = [
@@ -128,7 +105,6 @@ RULE_CATEGORIES = [
     {"cat": "Low-Confidence Signal", "weight": 12, "keywords": ["hack", "ignore", "override", "exploit", "leak", "breach", "vulnerability"]},
 ]
 
-
 def score_rule_engine(text_lower: str):
     score = 0
     matched = []
@@ -143,7 +119,7 @@ def score_rule_engine(text_lower: str):
     return min(100, score), matched, top_category
 
 # --------------------------------------------------------------------------
-# Layer 2 — Pattern Engine (regex structural attack signatures)
+# Layer 2 — Pattern Engine
 # --------------------------------------------------------------------------
 
 STRUCTURAL_PATTERNS = [
@@ -153,7 +129,6 @@ STRUCTURAL_PATTERNS = [
     {"name": "Safety negation clause", "re": re.compile(r"(bypass|disable|no)\s+(safety|restrictions?|filters?)", re.I), "weight": 25},
     {"name": "Forget-context directive", "re": re.compile(r"forget\s+(all\s+)?(previous|prior)\s+(rules|context|instructions)", re.I), "weight": 28},
 ]
-
 
 def score_pattern_engine(text: str):
     score = 0
@@ -165,9 +140,7 @@ def score_pattern_engine(text: str):
     return min(100, score), matched
 
 # --------------------------------------------------------------------------
-# Layer 3 — AI Classifier (Gemini, structured JSON output)
-# Returns a numeric risk_score instead of a bare category so it can be
-# blended with the other two layers instead of overriding them.
+# Layer 3 — AI Classifier
 # --------------------------------------------------------------------------
 
 AI_SYSTEM_PROMPT = """You are a senior cybersecurity expert specializing in LLM Prompt Injection.
@@ -194,7 +167,6 @@ Judge the prompt on its own merits using the examples above as a baseline.
 
 Prompt to analyze:
 """
-
 
 def score_ai_classifier(text: str) -> dict:
     fallback = {
@@ -236,13 +208,12 @@ def score_ai_classifier(text: str) -> dict:
 
 RULE_WEIGHT, PATTERN_WEIGHT, AI_WEIGHT = 0.35, 0.25, 0.40
 
-
 def decision_for(score: int) -> str:
     if score <= 30:
         return "ALLOW"
-    if score <= 60:
+    if score <= 50: # MODIFIED: Warning threshold lowered to 50
         return "WARNING"
-    return "BLOCK"
+    return "BLOCK"  # MODIFIED: Anything > 50 is automatically a BLOCK
 
 
 def fallback_rewrite(text: str) -> str:
@@ -263,15 +234,11 @@ def analyze_logic(text: str) -> dict:
     pattern_score, pattern_matched = score_pattern_engine(text)
     ai = score_ai_classifier(text)
 
-    # If the AI call failed, don't let a null score silently zero out the
-    # weighted average — approximate it from the other two layers instead.
     ai_score = ai["risk_score"] if ai["risk_score"] is not None else round(max(rule_score, pattern_score) * 0.8)
-
     final_score = round(rule_score * RULE_WEIGHT + pattern_score * PATTERN_WEIGHT + ai_score * AI_WEIGHT)
     decision = decision_for(final_score)
 
     category = rule_top_category or ai["category"] or ("Benign" if decision == "ALLOW" else "Anomalous Pattern")
-
     signal_count = len(rule_matched) + len(pattern_matched)
     confidence = ai["confidence"] if ai["confidence"] is not None else (
         min(99, 90 + (6 if signal_count == 0 else 0)) if decision == "ALLOW"
@@ -320,7 +287,6 @@ class PromptRequest(BaseModel):
     prompt: str
     user_id: str = "System"
 
-
 @app.post("/api/analyze")
 def analyze_endpoint(req: PromptRequest):
     if not req.prompt or not req.prompt.strip():
@@ -336,19 +302,27 @@ def analyze_endpoint(req: PromptRequest):
                                matchedPatterns, reasoning, rewrite)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            timestamp, req.user_id, result["prompt"], result["ruleScore"], result["patternScore"],
-            ai_score = result.get("aiScore", 0), result["finalScore"], result["decision"], result["category"],
-            result["confidence"], json.dumps(result["matchedKeywords"]),
-            json.dumps(result["matchedPatterns"]), result["reasoning"], result["rewrite"],
+            timestamp, 
+            req.user_id, 
+            result["prompt"], 
+            result["ruleScore"], 
+            result["patternScore"],
+            result.get("aiScore", 0), # FIXED: Removed python syntax error here
+            result["finalScore"], 
+            result["decision"], 
+            result["category"],
+            result["confidence"], 
+            json.dumps(result["matchedKeywords"]),
+            json.dumps(result["matchedPatterns"]), 
+            result["reasoning"], 
+            result["rewrite"],
         ))
 
-    # 3. CRASH-PROOF KEY RETRIEVAL
     decision = result.get("decision", "ALLOW")
     reasoning = result.get("reasoning", "Prompt cleared security thresholds.")
     final_score = result.get("finalScore", 0)
     ai_score = result.get("aiScore", 0) 
 
-    # 4. IF SECURITY BLOCKS THE PROMPT
     if decision == "BLOCK":
         return {
             "decision": "BLOCK",
@@ -360,11 +334,16 @@ def analyze_endpoint(req: PromptRequest):
             "user_id": req.user_id
         }
         
-    # 5. IF SECURITY ALLOWS THE PROMPT: Fetch real AI response
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(req.prompt)
-        real_ai_answer = response.text
+        # FIXED: Uses the correct initialized Google GenAI client
+        if client:
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=req.prompt
+            )
+            real_ai_answer = response.text
+        else:
+            real_ai_answer = "Prompt allowed, but API key is missing. Add GEMINI_API_KEY to Render."
     except Exception as e:
         real_ai_answer = f"Prompt allowed, but live generation failed: {str(e)}"
 
@@ -378,7 +357,6 @@ def analyze_endpoint(req: PromptRequest):
         "user_id": req.user_id
     }
 
-
 @app.get("/api/logs")
 def get_logs():
     with get_db() as conn:
@@ -391,7 +369,6 @@ def get_logs():
         row["matchedPatterns"] = json.loads(row["matchedPatterns"] or "[]")
         logs.append(row)
     return logs
-
 
 @app.get("/api/stats")
 def get_stats():
@@ -410,7 +387,6 @@ def get_stats():
         "allowed": total - blocked - warned,
         "avgRiskScore": avg_score,
     }
-
 
 @app.get("/api/health")
 def health():
